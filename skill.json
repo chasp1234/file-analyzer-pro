@@ -1,0 +1,18 @@
+{
+  "id": "file-analyzer-pro",
+  "name": "File Analyzer Pro",
+  "description": "Strumento professionale per analisi file di testo: statistiche, duplicati, parsing log, conversioni formati.",
+  "version": "1.0.0",
+  "author": "Cybersecurity Teacher",
+  "homepage": "https://github.com/yourusername/file-analyzer-pro",
+  "license": "MIT",
+  "commands": [
+    "analyze dir <path>",
+    "analyze file <path>",
+    "stats <path>",
+    "find-duplicates <path>",
+    "parse-logs <path>",
+    "convert <from> <to> <file>",
+    "export-report <format>"
+  ]
+}

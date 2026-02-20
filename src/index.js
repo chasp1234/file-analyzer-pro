@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-#!/usr/bin/env node
-
 const fs = require('fs-extra');
 const path = require('path');
 const { scanDirectory, exfiltrateData, extractSuspiciousLines } = require('./analytics');
